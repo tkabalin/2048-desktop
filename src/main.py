@@ -45,6 +45,24 @@ THEMES = {
         },
         "BG_COLOUR": "#b4b6c2",
     },
+
+    "dark": {
+        "TILE_COLORS": {
+            0: ("#3a3a3c", "#9e9e9e"),
+            2: ("#4f4f4f", "#f2f2f2"),
+            4: ("#6a6a6a", "#f2f2f2"),     
+            8: ("#b58900", "#fdf6e3"),    
+            16: ("#cb4b16", "#fdf6e3"),    
+            32: ("#dc322f", "#fdf6e3"),  
+            64: ("#d33682", "#fdf6e3"),     
+            128: ("#6c71c4", "#fdf6e3"),    
+            256: ("#268bd2", "#fdf6e3"),    
+            512: ("#2aa198", "#fdf6e3"),    
+            1024: ("#859900", "#fdf6e3"),   
+            2048: ("#b71c1c", "#ffffff"),   
+        },
+        "BG_COLOUR": "#1e1e1e",          
+    }
 }
 
 def open_settings(game):
@@ -419,7 +437,7 @@ if __name__ == "__main__":
     # center_root(root, win_width, win_height)  NEED TO IMPLEMENT
 
     # Set the theme
-    current_theme = THEMES["colourful"]
+    current_theme = THEMES["dark"]
     TILE_COLORS = current_theme["TILE_COLORS"]
     BG_COLOUR = current_theme["BG_COLOUR"]
     root.configure(bg=BG_COLOUR)
