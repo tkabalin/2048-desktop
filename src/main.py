@@ -211,7 +211,13 @@ class Game2048:
 
         # Shortcuts
         if key == 'z':
-            self.random()
+            self.random_strat()
+            return
+        if key == 'x':
+            self.corner_strat()
+            return
+        if key == 'c':
+            self.max_merge_strat()
             return
 
         saved_grid = util.copy_grid(self.grid)
@@ -240,7 +246,7 @@ class Game2048:
             self.game_over = True
             messagebox.showinfo("2048", "Game Over!")
 
-    def random(self):
+    def random_strat(self):
         if self.game_over:
             return  # Stop running when game is over
         saved_grid = util.copy_grid(self.grid)
@@ -261,8 +267,124 @@ class Game2048:
 
         self.make_move()
         if not self.game_over:
-            self.master.after(0, self.random)
+            self.master.after(0, self.random_strat)
 
+    def corner_strat(self):
+        if self.game_over:
+            return
+
+        saved_grid = util.copy_grid(self.grid)
+
+        # Priority order: LEFT, UP, DOWN, RIGHT
+        moved = False
+
+        push.push_left(self.grid)
+        if not util.grid_equal(saved_grid, self.grid):
+            moved = True
+
+        if not moved:
+            push.push_up(self.grid)
+            if not util.grid_equal(saved_grid, self.grid):
+                moved = True
+
+        if not moved:
+            push.push_down(self.grid)
+            if not util.grid_equal(saved_grid, self.grid):
+                moved = True
+
+        if not moved:
+            push.push_right(self.grid)
+
+        # Add a new block if the grid changed
+        if not util.grid_equal(saved_grid, self.grid):
+            self.add_block()
+
+        self.make_move()
+
+        if not self.game_over:
+            self.master.after(0, self.corner_strat)
+
+    def max_merge_strat(self):  # not working properly
+        if self.game_over:
+            return
+        
+        saved_grid = [row[:] for row in self.grid]
+        
+        move = self.best_merge_move(self.grid)
+        if move == "up":
+            push.push_up(self.grid)
+        elif move == "down":
+            push.push_down(self.grid)
+        elif move == "left":
+            push.push_left(self.grid)
+        elif move == "right":
+            push.push_right(self.grid)
+        elif move == None:  # Choose the first possible move
+            moved = False
+            push.push_left(self.grid)
+            if not util.grid_equal(saved_grid, self.grid):
+                moved = True
+
+            if not moved:
+                push.push_up(self.grid)
+                if not util.grid_equal(saved_grid, self.grid):
+                    moved = True
+
+            if not moved:
+                push.push_down(self.grid)
+                if not util.grid_equal(saved_grid, self.grid):
+                    moved = True
+
+            if not moved:
+                push.push_right(self.grid)
+
+        
+        if not util.grid_equal(saved_grid, self.grid):
+            self.add_block()
+        
+        self.make_move()
+        if not self.game_over:
+            self.master.after(0, self.max_merge_strat)  # Recurse
+
+    def count_merges(self, grid, move_func):
+        original_grid_copy = [row[:] for row in grid] # For checking if grid changed
+        temp_grid = [row[:] for row in grid]          # For applying the move
+        
+        original_sum = sum(sum(row) for row in temp_grid)
+        
+        move_func(temp_grid)
+        
+        # Check if the move did anything at all
+        is_valid_move = not util.grid_equal(original_grid_copy, temp_grid)
+        
+        new_sum = sum(sum(row) for row in temp_grid)
+        merged_value = new_sum - original_sum
+        
+        return merged_value, is_valid_move # Return both
+
+    def best_merge_move(self, grid):
+        moves = [
+            ("up", push.push_up),
+            ("down", push.push_down),
+            ("left", push.push_left),
+            ("right", push.push_right)
+        ]
+        
+        best_move = None
+        max_merge = -1
+        
+        for name, func in moves:
+            merged, is_valid = self.count_merges(grid, func) # Unpack tuple
+            
+            # Only consider moves that actually change the grid
+            if is_valid:
+                if merged > max_merge:
+                    max_merge = merged
+                    best_move = name
+        
+        # If all valid moves have merge_value=0, this will pick the first valid one.
+        # If no moves are valid, this will correctly return None.
+        return best_move
 
 
 if __name__ == "__main__":
