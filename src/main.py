@@ -6,10 +6,8 @@ import os
 from PIL import Image, ImageTk
 import util
 import push
+import sys
 
-
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.dirname(SCRIPT_DIR)
 
 THEMES = {
     "classic": {
@@ -85,6 +83,10 @@ def center_root(root, width, height):
 
     root.geometry(f"{width}x{height}+{x}+{y}")
 
+
+
+
+
 class Game2048:
     def __init__(self, master):
         # Create the window
@@ -100,9 +102,10 @@ class Game2048:
         self.cells = [[None]*4 for _ in range(4)]
         self.init_gui()
         self.update_gui()
+        self.game_over = False
         master.bind("<Key>", self.key_pressed)
 
-    def init_gui(self): # NEED TO UNDERSTAND
+    def init_gui(self):
         # Top frame for settings or other controls
         self.top_frame = tk.Frame(self.master, bg=BG_COLOUR)
         self.top_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=(10,0))
@@ -127,7 +130,17 @@ class Game2048:
         )
         self.gear_button.image = gear_image
         self.gear_button.pack(side="right", padx=10)  # right-aligned in top frame
-        self.background = tk.Frame(self.master, bg=BG_COLOUR)
+
+        self.restart_button = tk.Button(
+            self.top_frame,
+            text="Restart",
+            bg=BG_COLOUR,
+            borderwidth=0,
+            activebackground=BG_COLOUR,
+            command=self.restart
+        )
+        self.restart_button.pack(side="right", padx=10)  # right-aligned in top frame
+
         self.background = tk.Frame(self.master, bg=BG_COLOUR, width=400, height=400)
         self.background.grid(padx=10, pady=10)
         for i in range(4):
@@ -169,7 +182,7 @@ class Game2048:
                 self.grid[x][y] = chosen
                 found = True
 
-    def update_gui(self): # NEED TO UNDERSTAND
+    def update_gui(self):
         for i in range(4):
             for j in range(4):
                 value = self.grid[i][j]
@@ -177,17 +190,32 @@ class Game2048:
                 self.cells[i][j].config(text=str(value) if value != 0 else "", bg=bg_color, fg=fg_color)
         self.master.update_idletasks()
 
-    def update_theme(self, theme):  # NEED TO UNDERSTAND
+    def update_theme(self, theme):
         global TILE_COLORS, BG_COLOUR
         TILE_COLORS = theme["TILE_COLORS"]
         BG_COLOUR = theme["BG_COLOUR"]
         self.master.configure(bg=BG_COLOUR)
         self.background.configure(bg=BG_COLOUR)
         self.update_gui()
+    
+    def restart(self):
+        self.game_over = False
+        self.grid = []
+        util.create_grid(self.grid)
+        self.add_block()
+        self.add_block()
+        self.update_gui()
 
     def key_pressed(self, event):   # Accepts both arrows and WSAD
         key = event.keysym.lower()
+
+        # Shortcuts
+        if key == 'z':
+            self.random()
+            return
+
         saved_grid = util.copy_grid(self.grid)
+        
         if key == 'up' or key == 'w':
             push.push_up(self.grid)
         elif key == 'down' or key == 's':
@@ -196,17 +224,56 @@ class Game2048:
             push.push_left(self.grid)
         elif key == 'right' or key == 'd':
             push.push_right(self.grid)
+
         if not util.grid_equal(saved_grid, self.grid):  # Only add a block if the grid has changed
             self.add_block()
+        
+        self.make_move()
 
+    def make_move(self):
         self.update_gui()
         
         if util.check_won(self.grid):
+            self.game_over = True
             messagebox.showinfo("2048", "You won!")
         elif util.check_lost(self.grid):
+            self.game_over = True
             messagebox.showinfo("2048", "Game Over!")
 
+    def random(self):
+        if self.game_over:
+            return  # Stop running when game is over
+        saved_grid = util.copy_grid(self.grid)
+        num = random.randint(0, 3)
+
+        match num:
+            case 0:
+                push.push_up(self.grid)
+            case 1:
+                push.push_down(self.grid)
+            case 2:
+                push.push_left(self.grid)
+            case 3:
+                push.push_right(self.grid)
+            
+        if not util.grid_equal(saved_grid, self.grid):  # Only add a block if the grid has changed
+            self.add_block()
+
+        self.make_move()
+        if not self.game_over:
+            self.master.after(0, self.random)
+
+
+
 if __name__ == "__main__":
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        ROOT_DIR = sys._MEIPASS
+    except AttributeError:
+        # Development environment
+        SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+        ROOT_DIR = os.path.dirname(SCRIPT_DIR)
+
     # Increase DPI where possible
     try:
         ctypes.windll.shcore.SetProcessDpiAwareness(1)
