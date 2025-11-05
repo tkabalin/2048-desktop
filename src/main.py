@@ -70,24 +70,15 @@ THEMES = {
     },
 }
 
-
-class Direction(Enum):
-    UP = 1
-    DOWN = 2
-    LEFT = 3
-    RIGHT = 4
-
-
 # --- Board Logic ---
 
 class Board:
-    GRID_SIZE = 4
-
-    def __init__(self):
+    def __init__(self, grid_size):
         self.grid = []
         self.game_over = False
         self.update_callback = None
         self.restart()
+        self.grid_size = grid_size
 
     def set_update_callback(self, fn):
         self.update_callback = fn
@@ -97,8 +88,8 @@ class Board:
 
     def add_new_tile(self):
         empty_cells = [(r, c)
-                       for r in range(self.GRID_SIZE)
-                       for c in range(self.GRID_SIZE)
+                       for r in range(self.grid_size)
+                       for c in range(self.grid_size)
                        if self.grid[r][c] == 0]
         if not empty_cells:
             return
@@ -107,7 +98,7 @@ class Board:
 
     def restart(self):
         self.game_over = False
-        self.grid = [[0 for _ in range(self.GRID_SIZE)] for _ in range(self.GRID_SIZE)]
+        self.grid = [[0 for _ in range(self.grid_size)] for _ in range(self.grid_size)]
         self.add_new_tile()
         self.add_new_tile()
         if self.update_callback:
@@ -117,10 +108,11 @@ class Board:
 # --- Solver (Autoplay) ---
 
 class Solver:
-    def __init__(self, board: Board, gui):
+    def __init__(self, board: Board, gui, delay):
         self.board = board
         self.gui = gui
         self.running_strategy = None
+        self.delay = delay
 
     def stop(self):
         if self.running_strategy:
@@ -149,7 +141,7 @@ class Solver:
 
         self.gui.make_move()
         if not self.board.game_over:
-            self.running_strategy = self.gui.master.after(0, self.random_strat)
+            self.running_strategy = self.gui.master.after(self.delay, self.random_strat)
 
     def corner_strat(self):
         if self.board.game_over:
@@ -181,7 +173,7 @@ class Solver:
         self.gui.make_move()
 
         if not self.board.game_over:
-            self.running_strategy = self.gui.master.after(0, self.corner_strat)
+            self.running_strategy = self.gui.master.after(self.delay, self.corner_strat)
 
     def max_merge_strat(self):  # TODO: Fix
         if self.board.game_over:
@@ -220,7 +212,7 @@ class Solver:
             self.board.add_new_tile()
         self.gui.make_move()
         if not self.board.game_over:
-            self.running_strategy = self.gui.master.after(0, self.max_merge_strat)
+            self.running_strategy = self.gui.master.after(self.delay, self.max_merge_strat)
 
     def count_merges(self, grid):
         original_grid_copy = [row[:] for row in grid]
@@ -264,11 +256,11 @@ class GameGUI:
         self.theme_name = initial_theme_name
         self.theme = THEMES[initial_theme_name]
 
-        self.board = Board()
+        self.board = Board(grid_size = 4)
         self.board.set_update_callback(self.update_gui)
-        self.solver = Solver(self.board, self)
+        self.solver = Solver(self.board, self, delay = 0)
 
-        self.cells = [[None] * Board.GRID_SIZE for _ in range(Board.GRID_SIZE)]
+        self.cells = [[None] * Board.grid_size for _ in range(Board.grid_size)]
         self.init_gui()
         self.update_gui()
         self.master.bind("<Key>", self.key_pressed)
@@ -319,8 +311,8 @@ class GameGUI:
         self.background = tk.Frame(self.master, bg=bg_colour)
         self.background.grid(row=1, column=0, padx=10, pady=10)
 
-        for i in range(Board.GRID_SIZE):
-            for j in range(Board.GRID_SIZE):
+        for i in range(Board.grid_size):
+            for j in range(Board.grid_size):
                 cell_frame = tk.Frame(
                     self.background,
                     bg=self.theme["TILE_COLORS"][0][0],
@@ -405,8 +397,8 @@ class GameGUI:
 
     def update_gui(self):
         grid = self.board.get_grid()
-        for i in range(Board.GRID_SIZE):
-            for j in range(Board.GRID_SIZE):
+        for i in range(Board.grid_size):
+            for j in range(Board.grid_size):
                 value = grid[i][j]
                 # Get colors, using 'default' if value > 2048
                 bg_color, fg_color = self.theme["TILE_COLORS"].get(value, self.theme["TILE_COLORS"]["default"])
