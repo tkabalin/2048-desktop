@@ -25,13 +25,13 @@ class Solver:
         move = random.randint(0, 3)
         match move:
             case 0:
-                push.push_up(self.grid)
+                push.push_up(self.board.grid)
             case 1:
-                push.push_down(self.grid)
+                push.push_down(self.board.grid)
             case 2:
-                push.push_left(self.grid)
+                push.push_left(self.board.grid)
             case 3:
-                push.push_right(self.grid)
+                push.push_right(self.board.grid)
 
         if not util.grid_equal(saved_grid, grid):
             self.board.add_new_tile()
@@ -88,22 +88,22 @@ class Solver:
             push.push_right(grid)
         else: # Choose the first possible move
             moved = False
-            push.push_left(self.grid)
-            if not util.grid_equal(saved_grid, self.grid):
+            push.push_left(self.board.grid)
+            if not util.grid_equal(saved_grid, self.board.grid):
                 moved = True
 
             if not moved:
-                push.push_up(self.grid)
-                if not util.grid_equal(saved_grid, self.grid):
+                push.push_up(self.board.grid)
+                if not util.grid_equal(saved_grid, self.board.grid):
                     moved = True
 
             if not moved:
-                push.push_down(self.grid)
-                if not util.grid_equal(saved_grid, self.grid):
+                push.push_down(self.board.grid)
+                if not util.grid_equal(saved_grid, self.board.grid):
                     moved = True
 
             if not moved:
-                push.push_right(self.grid)
+                push.push_right(self.board.grid)
 
         if not util.grid_equal(saved_grid, grid):
             self.board.add_new_tile()
