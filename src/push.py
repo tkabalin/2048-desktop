@@ -2,6 +2,11 @@
 # Thomas Kabalin
 # 10/04/2024
 
+# NOTE: This is currently hardcoded to only work with grids of size 4
+
+# This could be coded much more efficiencly, but was originally done 
+# to meet the requirements of an intro to programming assignment
+
 def push_up (grid):
     """merge grid values upwards"""
     # Loop through the columns
@@ -66,7 +71,6 @@ def push_down(grid):
             grid[3 - r][c] = merge[r]  # Reverse the index when updating due to reversed grid
 
     # Reverse the order of rows in the grid back to the original
-    grid = grid[::-1]           
         
     return grid
 

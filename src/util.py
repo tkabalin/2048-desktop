@@ -2,6 +2,9 @@
 # Thomas Kabalin
 # 10/04/2024
 
+# NOTE: This is currently hardcoded to only work with grids of size 4
+# Some of the functions are unnecessary in the 2048-desktop game
+
 def create_grid(grid):
   """create a 4x4 array of zeroes within grid"""
   # Loop through the rows, adding four columns with 0s
