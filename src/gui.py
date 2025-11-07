@@ -8,6 +8,7 @@ from PIL import Image, ImageTk
 import tkinter as tk
 
 class GameGUI:
+
     def __init__(self, master, root_dir, tile_size, font_size, initial_theme_name):
         self.master = master
         self.root_dir = root_dir
@@ -15,6 +16,7 @@ class GameGUI:
         self.font_size = font_size
         self.theme_name = initial_theme_name
         self.theme = THEMES[initial_theme_name]
+        self.settings = None
 
         self.board = Board(grid_size = 4)
         self.board.set_update_callback(self.update_gui)
@@ -117,6 +119,7 @@ class GameGUI:
         grid = self.board.grid
         saved_grid = util.copy_grid(grid)
 
+        # Should be moved to board
         if key in ['up', 'w']:
             push.push_up(grid)
         elif key in ['down', 's']:
@@ -165,19 +168,16 @@ class GameGUI:
                 text = str(value) if value != 0 else ""
                 label = self.cells[i][j]
                 label.config(text=text, bg=bg_color, fg=fg_color)
-
-                # Adjust font size for larger numbers
-                if len(text) > 4:
-                    label.config(font=("Helvetica", self.font_size - 8, "bold"))
-                elif len(text) > 2:
-                    label.config(font=("Helvetica", self.font_size - 4, "bold"))
-                else:
-                    label.config(font=("Helvetica", self.font_size, "bold"))
+                
+                label.config(font=("Helvetica", self.font_size, "bold"))
 
         self.master.update_idletasks()
 
     def open_settings(self):
-        SettingsWindow(self.master, self.theme_name, self.update_theme)
+        if (self.settings == None) or (not self.settings.winfo_exists()):
+            self.settings = SettingsWindow(self.master, self.theme_name, self.update_theme)
+        else:
+            self.settings.focus()
 
 
 class SettingsWindow(tk.Toplevel):
@@ -191,6 +191,10 @@ class SettingsWindow(tk.Toplevel):
         self.configure(bg=parent.cget("bg"))
         self.create_widgets()
         self.center_window(250, 180)
+
+        # Run as modal
+        self.grab_set()
+        self.wait_window(self)
 
     def create_widgets(self):
         tk.Label(self, text="Select Theme:", bg=self.parent.cget("bg"), fg="#FFFFFF").pack(pady=(10, 5))
