@@ -9,7 +9,7 @@ class Solver:
         self.board = board
         self.gui = gui
         self.running_strategy = None
-        self.delay = delay
+        self.delay = delay.get()
 
     def stop(self):
         if self.running_strategy:

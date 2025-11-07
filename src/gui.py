@@ -9,7 +9,7 @@ import tkinter as tk
 
 class GameGUI:
 
-    def __init__(self, master, root_dir, tile_size, font_size, initial_theme_name):
+    def __init__(self, master, root_dir, tile_size, font_size, initial_theme_name, delay_ms, auto_restart):
         self.master = master
         self.root_dir = root_dir
         self.tile_size = tile_size
@@ -17,10 +17,12 @@ class GameGUI:
         self.theme_name = initial_theme_name
         self.theme = THEMES[initial_theme_name]
         self.settings = None
+        self.delay_ms = delay_ms
+        self.auto_restart = auto_restart
 
         self.board = Board(grid_size = 4)
         self.board.set_update_callback(self.update_gui)
-        self.solver = Solver(self.board, self, delay = 0)
+        self.solver = Solver(self.board, self, delay = delay_ms)
 
         self.cells = [[None] * self.board.grid_size for _ in range(self.board.grid_size)]
         self.init_gui()
@@ -175,53 +177,151 @@ class GameGUI:
 
     def open_settings(self):
         if (self.settings == None) or (not self.settings.winfo_exists()):
-            self.settings = SettingsWindow(self.master, self.theme_name, self.update_theme)
+            self.settings = SettingsWindow(self.master, self.theme_name, self.update_theme, self.delay_ms, self.auto_restart)
         else:
             self.settings.focus()
 
 
 class SettingsWindow(tk.Toplevel):
-    def __init__(self, parent, current_theme_name, theme_callback):
+    def __init__(self, parent, current_theme_name, theme_callback, delay_ms, auto_restart):
         super().__init__(parent)
         self.title("Settings")
         self.resizable(False, False)
         self.theme_callback = theme_callback
         self.parent = parent
         self.current_theme_name = tk.StringVar(value=current_theme_name)
+        self.delay_ms = delay_ms
+        self.auto_restart = auto_restart
         self.configure(bg=parent.cget("bg"))
         self.create_widgets()
-        self.center_window(250, 180)
+        self.center_window()
 
         # Run as modal
         self.grab_set()
         self.wait_window(self)
 
     def create_widgets(self):
-        tk.Label(self, text="Select Theme:", bg=self.parent.cget("bg"), fg="#FFFFFF").pack(pady=(10, 5))
+        bg_color = self.parent.cget("bg")
+
+        # --- Theme Selection Frame ---
+        theme_frame = tk.Frame(self, bg=bg_color)
+        theme_frame.pack(pady=(10, 5), padx=20, anchor="w")
+
+        tk.Label(theme_frame, text="Select Theme:", bg=bg_color, fg="#FFFFFF").pack(pady=(0, 5), anchor="w")
         for theme_name in THEMES.keys():
             rb = tk.Radiobutton(
-                self,
-                bg=self.parent.cget("bg"),
+                theme_frame,  
+                bg=bg_color,
+                activebackground=bg_color,
                 fg="#FFFFFF",
                 text=theme_name.title(),
                 variable=self.current_theme_name,
                 value=theme_name,
-                activebackground=self.parent.cget("bg"),
-                command=self.apply_and_close
+                selectcolor="#000000"
             )
             rb.pack(anchor="w", padx=20)
+
+        # --- Delay Control Frame ---
+        delay_frame = tk.Frame(self, bg=bg_color)
+        delay_frame.pack(pady=10, padx=20, anchor="w")
+        
+        # Delay Label
+        tk.Label(
+            delay_frame, 
+            text="Delay (ms):",
+            bg=bg_color,
+            fg="#FFFFFF",
+            font=("Helvetica", 10)
+        ).pack(side="left")
+
+        # Delay Spinbox
+        self.delay_spinbox = tk.Spinbox(
+            delay_frame, 
+            from_=0, 
+            to=1000, 
+            increment=50,
+            textvariable=self.delay_ms, 
+            width=5,
+        )
+        self.delay_spinbox.pack(side="left", padx=(5, 10))
+
+        # --- Continuous Play Checkbox ---
+        play_frame = tk.Frame(self, bg=bg_color)
+        play_frame.pack(pady=(0, 10), padx=20, anchor="w")
+
+        tk.Checkbutton(
+            play_frame,
+            text="Auto-Restart AI",
+            variable=self.auto_restart,
+            bg=bg_color,
+            fg="#FFFFFF",
+            selectcolor="#000000",
+            activebackground=bg_color,
+            offvalue=False,
+            onvalue=True
+        ).pack(anchor="w")
+
+        # --- Button Frame ---
+        button_frame = tk.Frame(self, bg=bg_color)
+        button_frame.pack(pady=(5, 15), padx=15)
+
+        # Revert Button (Left side of button_frame)
+        tk.Button(
+            button_frame,
+            text="Revert",
+            command=self.revert_settings, 
+            width=8
+        ).pack(side="left", padx=(0, 40))
+
+        # OK Button (Right side of button_frame)
+        tk.Button(
+            button_frame,
+            text="OK",
+            command=self.apply_and_close, 
+            width=8
+        ).pack(side="right", padx=(10, 0))
+        
+        # Cancel Button (Right side, next to OK)
+        tk.Button(
+            button_frame,
+            text="Cancel",
+            command=self.cancel_and_close, 
+            width=8
+        ).pack(side="right", padx=0)
+
 
     def apply_and_close(self):
         selected_theme = self.current_theme_name.get()
         self.theme_callback(selected_theme)
+
+
+        self.grab_release()
         self.destroy()
 
-    def center_window(self, width, height):
+    def cancel_and_close(self):
+        # Close the window without applying the theme change
+        self.grab_release()
+        self.destroy()
+
+    def revert_settings(self):
+        self.theme_callback("colourful")
+        
+
+        self.grab_release()
+        self.destroy()
+
+    def center_window(self):
         self.parent.update_idletasks()
+
+        width = self.winfo_width()
+        height = self.winfo_height()
+
         parent_x = self.parent.winfo_x()
         parent_y = self.parent.winfo_y()
         parent_width = self.parent.winfo_width()
         parent_height = self.parent.winfo_height()
+
         x = parent_x + (parent_width // 2) - (width // 2)
         y = parent_y + (parent_height // 2) - (height // 2)
+
         self.geometry(f"{width}x{height}+{x}+{y}")

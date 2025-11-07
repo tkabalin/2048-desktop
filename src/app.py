@@ -15,7 +15,9 @@ class Application:
             self.root_dir,
             self.tile_size,
             self.font_size,
-            self.initial_theme_name
+            self.initial_theme_name,
+            delay_ms=tk.IntVar(value=0),
+            auto_restart=tk.BooleanVar(value=False)
         )
         self._center_root()
 
